@@ -59,7 +59,7 @@ commit; the security rules are what protect the data.
 ## 4. Build and deploy
 
 ```
-cd designer-task-hub
+git clone https://github.com/maverick-nair/Tasktracker && cd Tasktracker
 npm install
 npx firebase login
 cd firebase && npx firebase use --add      # pick your project, alias "default"
