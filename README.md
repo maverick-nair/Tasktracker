@@ -36,7 +36,9 @@ The roles are enforced by Firestore security rules on the server
 (`firebase/firestore.rules`): a designer can only read their own tasks and
 write their own progress and leave, a PM only their own requests and the tasks
 that came from them, and only the owner can approve work, manage people or
-change the lists. The owner account is fixed by email at build time.
+change the lists. Owner accounts are fixed by email at build time
+(`ownerEmails` in `web/firebase-config.js`); owners cannot change or remove
+each other.
 
 ## Sign in and sign out
 

@@ -16,7 +16,7 @@ const OUT = fs.mkdtempSync(path.join(process.env.DTH_TMP || os.tmpdir(), "dth-ui
 const html = fs.readFileSync(path.join(ROOT, "dist-web/index.html"), "utf8");
 const mock = fs.readFileSync(path.join(__dirname, "mock-platform.js"), "utf8");
 const jszip = fs.readFileSync(require.resolve("jszip/dist/jszip.min.js"), "utf8");
-const config = `window.DTH_CONFIG = ${JSON.stringify({ firebase: {}, ownerEmail: "manu.nair@knolskape.com", allowedDomain: "knolskape.com" })};`;
+const config = `window.DTH_CONFIG = ${JSON.stringify({ firebase: {}, ownerEmails: ["manu.nair@knolskape.com", "sreedhar.badrinath@knolskape.com", "kalyan.maganti@knolskape.com"], allowedDomain: "knolskape.com" })};`;
 const js = (body) => (r) => r.fulfill({ contentType: "application/javascript", body });
 
 const OWNER = "manu.nair@knolskape.com";

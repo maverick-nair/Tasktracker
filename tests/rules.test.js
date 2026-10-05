@@ -8,6 +8,7 @@ const { initializeTestEnvironment, assertSucceeds, assertFails } = require("@fir
 const RULES = fs.readFileSync(path.join(__dirname, "../firebase/firestore.rules"), "utf8");
 let env;
 const OWNER = { uid: "owner", email: "manu.nair@knolskape.com" };
+const OWNER2 = { uid: "owner2", email: "kalyan.maganti@knolskape.com" };
 const DES = { uid: "des1", email: "pragati@knolskape.com" };
 const DES2 = { uid: "des2", email: "swathi@knolskape.com" };
 const PM = { uid: "pm1", email: "raghav@knolskape.com" };
@@ -35,6 +36,8 @@ test("owner bootstraps only from the configured email", async () => {
   await env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc("members/owner").delete());
   await assertFails(as(DES).doc("members/des1").set({ role: "owner", name: "", email: DES.email }));
   await assertSucceeds(as(OWNER).doc("members/owner").set({ role: "owner", name: "", email: OWNER.email }));
+  await assertSucceeds(as(OWNER2).doc("members/owner2").set({ role: "owner", name: "", email: OWNER2.email }));
+  await assertFails(as(OWNER2).doc("members/owner2").set({ role: "owner", name: "", email: OWNER.email }));
 });
 
 test("joining needs a matching invitation, a verified company email", async () => {
@@ -62,6 +65,11 @@ test("members cannot change their own role; only the owner manages people", asyn
   await assertSucceeds(as(OWNER).doc("members/des2").update({ role: "pm", name: "SL" }));
   await assertFails(as(OWNER).doc("members/pm1").update({ role: "owner" }));
   await assertFails(as(OWNER).doc("members/owner").delete());
+  // one owner cannot demote or remove another
+  await assertSucceeds(as(OWNER2).doc("members/owner2").set({ role: "owner", name: "", email: OWNER2.email }));
+  await assertFails(as(OWNER).doc("members/owner2").update({ role: "pm", name: "SL" }));
+  await assertFails(as(OWNER).doc("members/owner2").delete());
+  await assertSucceeds(as(OWNER2).doc("members/des2").update({ role: "pm", name: "SL" }));
 });
 
 test("tasks: only the owner writes; designers and PMs read only their slice", async () => {

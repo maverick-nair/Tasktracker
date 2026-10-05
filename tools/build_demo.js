@@ -11,7 +11,13 @@ const PW = "Demo#2026";
 for (const u of Object.values(seed.auth)) u.password = PW;
 const accounts = [["Owner", "manu.nair@knolskape.com"], ["Product manager", "raghav@knolskape.com"], ["Designer", "pragati@knolskape.com"]]
   .map(([label, email]) => ({ label, email, password: PW }));
-const config = { firebase: {}, ownerEmail: "manu.nair@knolskape.com", allowedDomain: "knolskape.com", demoAccounts: accounts };
+const OWNERS = [["Manu Nair", "manu.nair@knolskape.com"], ["Sreedhar Badrinath", "sreedhar.badrinath@knolskape.com"], ["Kalyan Maganti", "kalyan.maganti@knolskape.com"]];
+for (const [name, email] of OWNERS) {
+  const uid = "u_" + email.split("@")[0].replace(/[^a-z0-9]/g, "");
+  seed.auth[email] = seed.auth[email] || { uid, password: PW, displayName: name, verified: true };
+  seed.db[`members/${uid}`] = seed.db[`members/${uid}`] || { role: "owner", name: "", email, displayName: name, joinedAt: new Date().toISOString() };
+}
+const config = { firebase: {}, ownerEmails: OWNERS.map((o) => o[1]), allowedDomain: "knolskape.com", demoAccounts: accounts };
 const mock = fs.readFileSync(path.join(root, "tests/mock-platform.js"), "utf8");
 const demo = `<script>
 window.DTH_CONFIG = ${JSON.stringify(config)};

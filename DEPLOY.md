@@ -43,13 +43,15 @@ Edit `web/firebase-config.js`:
 ```js
 window.DTH_CONFIG = {
   firebase: { apiKey: "...", authDomain: "....firebaseapp.com", projectId: "...", appId: "..." },
-  ownerEmail: "manu.nair@knolskape.com",
+  ownerEmails: ["manu.nair@knolskape.com", "sreedhar.badrinath@knolskape.com", "kalyan.maganti@knolskape.com"],
   allowedDomain: "knolskape.com",
 };
 ```
 
-- `ownerEmail` is the one account that becomes the Owner. It is written into the
-  security rules at build time, so nobody can make themselves Owner later.
+- `ownerEmails` are the accounts that become Owners the moment they sign up. The
+  list is written into the security rules at build time, so nobody can make
+  themselves Owner later, and no owner can change or remove another owner.
+  To add or remove an owner, edit the list and run `npm run deploy` again.
 - `allowedDomain` limits accounts to official emails. Other addresses cannot be
   invited, cannot request access, and the rules refuse them.
 
@@ -77,7 +79,7 @@ The site is now live at `https://<project>.web.app`.
 ## 5. First sign-in and inviting the team
 
 1. Open `https://<project>.web.app/#owner`, choose **Create your account** and
-   sign up with the owner email. Confirm the email from the message you get,
+   sign up with one of the owner emails. Each owner does this once. Confirm the email from the message you get,
    then press **I've confirmed my email**. You land on the Owner Dashboard.
    The lists (4E lines and products, subtask types, designers, PMs, projects)
    start with the workbook's values; change them under **Lists & 4E**.
@@ -144,4 +146,4 @@ to the Blaze plan and turn on Firestore scheduled backups.
 | "The platform isn't connected to its backend yet" | `web/firebase-config.js` is empty. Fill it in, then `npm run deploy`. |
 | "You don't have permission" after deploying | The rules were not deployed or were built with another owner email. Run `npm run deploy` again. |
 | Verification or reset email never arrives | Check spam; check the domain is listed under Authorized domains. |
-| The owner lands on "Request access" | The account email does not match `ownerEmail` exactly. Fix the file and redeploy. |
+| An owner lands on "Request access" | The account email is not in `ownerEmails` exactly as typed. Fix the file and redeploy. |

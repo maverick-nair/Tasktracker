@@ -1,6 +1,6 @@
 rules_version = '2';
 // Design Task Hub: role based access, enforced by Firestore on the server.
-// Generated into firestore.rules by tools/build_web.js (owner email and domain
+// Generated into firestore.rules by tools/build_web.js (owner emails and domain
 // come from web/firebase-config.js). Roles live in members/{uid}.role:
 //   owner     everything: approves requests, manages people, lists and exports
 //   pm        own requests only, and the tasks that came from them
@@ -21,22 +21,23 @@ service cloud.firestore {
     function isOwner() { return hasRole('owner'); }
     function isPM() { return hasRole('pm'); }
     function isDesigner() { return hasRole('designer'); }
-    function ownerEmail() { return '__OWNER_EMAIL__'; }
+    function isOwnerEmail() { return email() in [__OWNER_EMAILS__]; }
     function invitePath(e) { return /databases/$(database)/documents/invites/$(e); }
 
-    // People: the owner bootstraps from the configured email; others join from an invitation
+    // People: owners bootstrap from the configured emails; others join from an invitation.
+    // Owners manage PMs and designers; no one changes or removes another owner.
     match /members/{uid} {
       allow read: if isMember() || (verified() && request.auth.uid == uid);
       allow create: if (verified() && request.auth.uid == uid && request.resource.data.email == email() && (
-            (email() == ownerEmail() && request.resource.data.role == 'owner')
+            (isOwnerEmail() && request.resource.data.role == 'owner')
             || (exists(invitePath(email()))
                 && request.resource.data.role == get(invitePath(email())).data.role
                 && request.resource.data.name == get(invitePath(email())).data.name)))
         || (isOwner() && uid != request.auth.uid && request.resource.data.role in ['pm', 'designer']);
-      allow update: if (isOwner() && uid != request.auth.uid && request.resource.data.role in ['pm', 'designer'])
+      allow update: if (isOwner() && uid != request.auth.uid && resource.data.role != 'owner' && request.resource.data.role in ['pm', 'designer'])
         || (isMember() && request.auth.uid == uid
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName']));
-      allow delete: if isOwner() && uid != request.auth.uid;
+      allow delete: if isOwner() && uid != request.auth.uid && resource.data.role != 'owner';
     }
     match /invites/{inviteEmail} {
       allow read: if isOwner() || (verified() && email() == inviteEmail);

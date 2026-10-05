@@ -13,7 +13,8 @@ const b64 = (p) => fs.readFileSync(path.join(root, p)).toString("base64");
 const sandbox = { window: {} };
 vm.runInNewContext(read("web/firebase-config.js"), sandbox);
 const cfg = sandbox.window.DTH_CONFIG || {};
-if (!cfg.ownerEmail || !cfg.allowedDomain) throw new Error("web/firebase-config.js needs ownerEmail and allowedDomain");
+const owners = [].concat(cfg.ownerEmails || [], cfg.ownerEmail || []).map((e) => String(e).trim().toLowerCase()).filter(Boolean);
+if (!owners.length || !cfg.allowedDomain) throw new Error("web/firebase-config.js needs ownerEmails and allowedDomain");
 
 const FB = "10.14.1";
 let src = read("app/index.src.html")
@@ -48,6 +49,6 @@ fs.copyFileSync(path.join(root, "app/platform.firebase.js"), path.join(out, "pla
 fs.copyFileSync(path.join(root, "web/firebase-config.js"), path.join(out, "firebase-config.js"));
 const esc = (x) => String(x).toLowerCase().replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 const domainRe = String(cfg.allowedDomain).toLowerCase().replace(/[.]/g, "[.]");
-const rules = read("firebase/firestore.rules.template").replaceAll("__OWNER_EMAIL__", esc(cfg.ownerEmail)).replaceAll("__DOMAIN_RE__", domainRe);
+const rules = read("firebase/firestore.rules.template").replaceAll("__OWNER_EMAILS__", owners.map((e) => `'${esc(e)}'`).join(", ")).replaceAll("__DOMAIN_RE__", domainRe);
 fs.writeFileSync(path.join(root, "firebase/firestore.rules"), rules);
-console.log(`dist-web/index.html ${(html.length / 1024).toFixed(0)} KB, rules for ${cfg.ownerEmail} @${cfg.allowedDomain}`);
+console.log(`dist-web/index.html ${(html.length / 1024).toFixed(0)} KB, rules for ${owners.join(", ")} @${cfg.allowedDomain}`);

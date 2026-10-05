@@ -8,7 +8,8 @@ window.DTH_CONFIG = {
     projectId: "",         // e.g. design-task-hub
     appId: "",
   },
-  ownerEmail: "manu.nair@knolskape.com", // becomes the Owner on first sign-up
+  // Owners: these accounts get the Owner Dashboard as soon as they sign up (written into the security rules at build time)
+  ownerEmails: ["manu.nair@knolskape.com", "sreedhar.badrinath@knolskape.com", "kalyan.maganti@knolskape.com"],
   allowedDomain: "knolskape.com",        // only these emails can have accounts
   // emulators: { auth: "http://127.0.0.1:9099", firestoreHost: "127.0.0.1", firestorePort: 8080 },
 };

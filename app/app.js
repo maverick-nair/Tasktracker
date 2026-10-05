@@ -505,6 +505,7 @@ const AUTH_MSG = {
   not_configured: "The platform isn't connected to its backend yet. The administrator needs to finish setup (firebase-config.js).",
 };
 const authMsg = (e) => AUTH_MSG[e && e.code] || "Something went wrong. Try again.";
+const ownerEmails = () => [].concat(CFG.ownerEmails || [], CFG.ownerEmail || []).map((e) => String(e).trim().toLowerCase()).filter(Boolean);
 const domainOk = (email) => { const d = (CFG.allowedDomain || "").toLowerCase(); return !d || String(email).toLowerCase().trim().endsWith("@" + d); };
 function passwordIssues(pw) {
   const out = [];
@@ -1464,6 +1465,7 @@ function viewPeople(root) {
     f.err = ""; f.sent = null;
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { f.err = "Enter their work email."; return render(); }
     if (!domainOk(email)) { f.err = `Only official @${CFG.allowedDomain} emails can be invited.`; return render(); }
+    if (ownerEmails().includes(email)) { f.err = "This email is a configured owner. They get the Owner Dashboard as soon as they create their account; no invitation needed."; return render(); }
     if (memberEmails.has(email)) { f.err = "This person already has access. Change their role in Members below."; return render(); }
     if (!f.name) { f.err = "Choose their name on the tracker."; return render(); }
     const inv = { email, role: f.role, name: f.name, invitedBy: S.me.id, at: nowIso() };
@@ -1502,6 +1504,11 @@ function viewPeople(root) {
   const links = h("div", { class: "card pad stack" }, h("h2", null, "Links"), h("div", { class: "links" },
     link("pm", "For product managers. Create requests and follow approval."), link("designer", "For product designers. Daily progress, deliverables and weekly leave."), link("owner", "For you only. Anyone else is turned away.")));
 
+  const owners = h("div", { class: "card pad stack" }, h("div", { class: "section-title" }, h("h2", null, "Owners"), h("span", { class: "muted" }, "Set in firebase-config.js")),
+    h("div", { class: "stack", style: "gap:10px" }, ownerEmails().map((em) => { const m = Object.values(S.people).find((x) => (x.email || "").toLowerCase() === em && x.role === "owner");
+      return h("div", { class: "row", style: "gap:12px" }, avatar(null, (m && m.displayName) || em), h("div", { style: "flex:1;min-width:0" }, h("div", { style: "font-weight:600;color:var(--ink)" }, (m && m.displayName) || em), h("div", { class: "small muted" }, m ? em : "Has not created their account yet")),
+        m ? pill("Owner", "warn") : pill("Waiting for sign-up", "neutral")); })),
+    h("div", { class: "hint" }, "Owners see everything and approve work. To add or remove an owner, change ownerEmails in web/firebase-config.js and redeploy; the security rules are rebuilt from it."));
   const members = Object.entries(S.people).sort(([, x], [, y]) => (x.role === "owner" ? -1 : y.role === "owner" ? 1 : (x.displayName || "").localeCompare(y.displayName || "")));
   const table = h("div", { class: "card" }, h("div", { class: "pad card-head" }, h("div", { class: "section-title" }, h("h2", null, "Members"), h("span", { class: "muted" }, String(members.length)))),
     h("div", { class: "tbl-wrap" }, h("table", null, h("thead", null, h("tr", null, ["Person", "Role", "Name on tracker", "Last signed in", ""].map((x) => h("th", null, x)))),
@@ -1521,7 +1528,7 @@ function viewPeople(root) {
       avatar(null, personOf(e.target).name, "avatar", "width:28px;height:28px"),
       h("div", { style: "flex:1;min-width:0" }, h("div", { class: "small" }, h("b", { style: "color:var(--ink)" }, e.action), `: ${personOf(e.target).name}${e.detail ? ", " + e.detail : ""}`),
         h("div", { class: "hint" }, `${fmtWhen(e.at)} by ${e.by === S.me.id ? "you" : personOf(e.by).name}`))))) : h("div", { class: "hint" }, "Changes to access appear here."));
-  root.appendChild(h("div", { class: "grid2" }, h("div", { class: "stack" }, invite, requests), h("div", { class: "stack" }, pending, links)));
+  root.appendChild(h("div", { class: "grid2" }, h("div", { class: "stack" }, invite, requests), h("div", { class: "stack" }, owners, pending, links)));
   root.appendChild(table);
   root.appendChild(history);
 }
@@ -1741,7 +1748,7 @@ function normalizeConfig(c) {
 async function tryJoin() {
   const email = S.me.email;
   const base = { email, displayName: S.me.name || "", joinedAt: nowIso() };
-  if (CFG.ownerEmail && email === String(CFG.ownerEmail).toLowerCase()) {
+  if (ownerEmails().includes(email)) {
     await db.doc(`members/${S.me.id}`).set({ ...base, role: "owner", name: "" });
     const conf = await db.doc("config/main").get().catch(() => null);
     if (conf && !conf.exists) await db.doc("config/main").set(clone(STARTER_CFG));
