@@ -3,7 +3,10 @@
 // can take turns in one browser. No security rules here: those are covered by
 // tests/rules.test.js against the Firestore emulator.
 (function () {
-  const L = window.localStorage;
+  // Storage falls back to memory where the page may not use localStorage (sandboxed frames, private windows)
+  const memStore = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k) }; };
+  const safe = (get) => { try { const st = get(); st.getItem("__probe"); return st; } catch (e) { return memStore(); } };
+  const L = safe(() => window.localStorage), SS = safe(() => window.sessionStorage);
   const load = (k, d) => JSON.parse(L.getItem(k) || JSON.stringify(d));
   const save = (k, v) => L.setItem(k, JSON.stringify(v));
   const listeners = new Set();
@@ -40,7 +43,7 @@
 
   // accounts: { email: {uid, password, displayName, verified} }; signed-in email in session (or local when kept)
   const users = () => load("mockauth", {});
-  const cur = () => sessionStorage.getItem("mockcur") || L.getItem("mockcur");
+  const cur = () => SS.getItem("mockcur") || L.getItem("mockcur");
   const userOf = (email) => { const u = email && users()[email]; return u ? { uid: u.uid, email, emailVerified: !!u.verified, displayName: u.displayName || "" } : null; };
   const authCbs = [];
   const fire = () => { const u = userOf(cur()); authCbs.forEach((cb) => cb(u)); };
@@ -50,6 +53,7 @@
 
   window.DTHPlatform = {
     kind: "mock",
+    __store: L,
     config: window.DTH_CONFIG,
     async init() {},
     auth: {
@@ -58,21 +62,21 @@
       async signIn(email, password, keep) {
         const u = users()[email];
         if (!u || u.password !== password) return err("auth/invalid-credential");
-        sessionStorage.removeItem("mockcur"); L.removeItem("mockcur");
-        (keep ? L : sessionStorage).setItem("mockcur", email); fire(); return userOf(email);
+        SS.removeItem("mockcur"); L.removeItem("mockcur");
+        (keep ? L : SS).setItem("mockcur", email); fire(); return userOf(email);
       },
       async signUp(email, password, name) {
         const all = users();
         if (all[email]) return err("auth/email-already-in-use");
         all[email] = { uid: "u_" + email.split("@")[0].replace(/[^a-z0-9]/g, ""), password, displayName: name, verified: false };
-        save("mockauth", all); sessionStorage.setItem("mockcur", email); window.__outbox.push({ to: email, kind: "verify" }); fire(); return userOf(email);
+        save("mockauth", all); SS.setItem("mockcur", email); window.__outbox.push({ to: email, kind: "verify" }); fire(); return userOf(email);
       },
       async sendVerification() { window.__outbox.push({ to: cur(), kind: "verify" }); },
       async refresh() { return userOf(cur()); },
       async resetPassword(email) { window.__outbox.push({ to: email, kind: "reset" }); },
       async changePassword(current, next) { const all = users(); const e = cur(); if (all[e].password !== current) return err("auth/invalid-credential"); all[e].password = next; save("mockauth", all); },
       async updateName(name) { const all = users(); all[cur()].displayName = name; save("mockauth", all); return userOf(cur()); },
-      async signOut() { sessionStorage.removeItem("mockcur"); L.removeItem("mockcur"); fire(); },
+      async signOut() { SS.removeItem("mockcur"); L.removeItem("mockcur"); fire(); },
     },
     db: { doc: docRef, collection: colRef },
     async download(filename, blob) {

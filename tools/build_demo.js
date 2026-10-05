@@ -15,13 +15,12 @@ const config = { firebase: {}, ownerEmail: "manu.nair@knolskape.com", allowedDom
 const mock = fs.readFileSync(path.join(root, "tests/mock-platform.js"), "utf8");
 const demo = `<script>
 window.DTH_CONFIG = ${JSON.stringify(config)};
-(function () {
-  // Sample data on first open; new sign-ups are treated as verified
-  try { if (!localStorage.getItem("mockdb")) { localStorage.setItem("mockdb", ${JSON.stringify(JSON.stringify(seed.db))}); localStorage.setItem("mockauth", ${JSON.stringify(JSON.stringify(seed.auth))}); } } catch (e) {}
-})();
 ${mock}
 (function () {
   const P = window.DTHPlatform, signUp = P.auth.signUp;
+  // Sample data on first open (kept in the browser, or in memory where storage is blocked); new sign-ups are treated as verified
+  const st = P.__store;
+  if (!st.getItem("mockdb")) { st.setItem("mockdb", ${JSON.stringify(JSON.stringify(seed.db))}); st.setItem("mockauth", ${JSON.stringify(JSON.stringify(seed.auth))}); }
   P.auth.signUp = async (email, pw, name) => { const u = await signUp(email, pw, name); window.__verifyEmail(email); return { ...u, emailVerified: true }; };
   // Inside the claude.ai artifact viewer the save goes through its downloads capability; elsewhere a plain download link
   P.download = async (filename, blob) => {
