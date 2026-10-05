@@ -1,5 +1,7 @@
 # Design Task Hub
 
+[![Tests](https://github.com/maverick-nair/Tasktracker/actions/workflows/tests.yml/badge.svg)](https://github.com/maverick-nair/Tasktracker/actions/workflows/tests.yml)
+
 A standalone web platform for requesting, approving and tracking product design work,
 built around the **Product Designer Task Manager** workbook. Product managers
 submit task requests, the owner approves them through a task funnel, designers
@@ -137,8 +139,13 @@ npm run deploy           # build, then deploy hosting and rules (see DEPLOY.md)
 
 The parity test recalculates a 60-task workbook in LibreOffice and compares
 every auto-calculated Tracker column, the Scorecard and the weekly workload
-with `metrics.js`. It needs LibreOffice Calc and `RECALC=<path to recalc.py>`;
-without them it is skipped.
+with `metrics.js`. Run it with `RECALC=tools/recalc.py npm test`; it needs
+LibreOffice Calc and Python's openpyxl, and is skipped without them.
+
+GitHub Actions (`.github/workflows/tests.yml`) runs all of this on every push
+and pull request: build, export and parity tests, the security rules against
+the Firestore emulator, and the browser walk-through, keeping its screenshots
+as a workflow artifact.
 
 The UI test (`tests/ui.smoke.js`, with `tests/mock-platform.js` in place of
 Firebase) walks sign up, email confirmation, invitations and role changes,
