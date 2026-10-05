@@ -12,7 +12,9 @@ const os = require("os");
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || "playwright");
 
 const ROOT = path.join(__dirname, "..");
-const OUT = fs.mkdtempSync(path.join(process.env.DTH_TMP || os.tmpdir(), "dth-ui-"));
+const TMP = process.env.DTH_TMP || os.tmpdir();
+fs.mkdirSync(TMP, { recursive: true });
+const OUT = fs.mkdtempSync(path.join(TMP, "dth-ui-"));
 const html = fs.readFileSync(path.join(ROOT, "dist-web/index.html"), "utf8");
 const mock = fs.readFileSync(path.join(__dirname, "mock-platform.js"), "utf8");
 const jszip = fs.readFileSync(require.resolve("jszip/dist/jszip.min.js"), "utf8");
